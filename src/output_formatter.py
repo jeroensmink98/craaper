@@ -23,13 +23,30 @@ def format_results(results: List[CRAAPScore]) -> str:
         for result in results
     ])
     
+    # Calculate total token usage and costs
+    total_input_tokens = sum(result.input_tokens for result in results)
+    total_output_tokens = sum(result.output_tokens for result in results)
+    total_cost = sum(result.get_estimated_cost() for result in results)
+    cached_results = sum(1 for result in results if result.cached)
+    
+    # Create token usage and cost summary
+    usage_summary = [
+        "\nToken Usage and Cost Summary:",
+        f"Total Input Tokens: {total_input_tokens:,}",
+        f"Total Output Tokens: {total_output_tokens:,}",
+        f"Total Tokens: {total_input_tokens + total_output_tokens:,}",
+        f"Estimated Cost: ${total_cost:.4f}",
+        f"Results from Cache: {cached_results}/{len(results)}",
+    ]
+    
     # Create detailed explanations
     explanations = []
     for result in results:
         total_score = result.get_total_score()
         category = result.get_category()
+        cache_status = "(Cached)" if result.cached else f"(Tokens: {result.input_tokens + result.output_tokens:,}, Cost: ${result.get_estimated_cost():.4f})"
         explanations.extend([
-            f"\nDetailed Analysis for {result.entry_citation}:",
+            f"\nDetailed Analysis for {result.entry_citation} {cache_status}:",
             f"Total Score: {total_score:.2f} - Category: {category}",
             f"Currency ({result.currency:.2f}): {result.currency_explanation}",
             f"Relevance ({result.relevance:.2f}): {result.relevance_explanation}",
@@ -54,6 +71,8 @@ def format_results(results: List[CRAAPScore]) -> str:
         tabulate(scores_df, headers='keys', tablefmt='grid', showindex=False),
         "",
         "Note: Scores marked with * indicate lower confidence (< 0.7) in the assessment",
+        "",
+        *usage_summary,
         "",
         "Detailed Explanations:",
         *explanations

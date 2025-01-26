@@ -35,6 +35,11 @@ class CRAAPScore:
     
     entry_key: str
     entry_citation: str
+    
+    # Token usage tracking
+    input_tokens: int
+    output_tokens: int
+    cached: bool = False  # Whether this result came from cache
 
     def get_total_score(self) -> float:
         """Calculate the total CRAAP score (max 50 points)"""
@@ -53,6 +58,15 @@ class CRAAPScore:
             return "Borderline"
         else:
             return "Unreliable, not suitable for use"
+            
+    def get_estimated_cost(self) -> float:
+        """Calculate estimated cost in USD based on current GPT-4 pricing"""
+        if self.cached:
+            return 0.0
+        # Current GPT-4 pricing (as of 2024): $0.03/1K tokens input, $0.06/1K tokens output
+        input_cost = (self.input_tokens / 1000) * 0.03
+        output_cost = (self.output_tokens / 1000) * 0.06
+        return input_cost + output_cost
 
 class CRAAPAnalyzer:
     def __init__(self):
@@ -77,10 +91,19 @@ class CRAAPAnalyzer:
         with open(self.cache_file, 'w') as f:
             json.dump(self.cache, f, indent=2)
     
+    def _clean_entry(self, entry: Dict) -> Dict:
+        """Remove large fields like abstract from the entry"""
+        cleaned = entry.copy()
+        fields_to_remove = ['abstract', 'Abstract']  # Case variations
+        for field in fields_to_remove:
+            cleaned.pop(field, None)
+        return cleaned
+    
     def _compute_entry_hash(self, entry) -> str:
         """Compute a hash for the bibliography entry"""
-        # Create a string with all entry fields
-        entry_str = json.dumps(entry, sort_keys=True)
+        # Create a string with all entry fields, excluding abstract
+        cleaned_entry = self._clean_entry(entry)
+        entry_str = json.dumps(cleaned_entry, sort_keys=True)
         return hashlib.sha256(entry_str.encode()).hexdigest()
     
     def _cache_key(self, entry_hash: str) -> str:
@@ -106,7 +129,10 @@ class CRAAPAnalyzer:
             purpose_explanation=cached_data['purpose_explanation'],
             purpose_confidence=cached_data['purpose_confidence'],
             entry_key=cached_data['entry_key'],
-            entry_citation=cached_data['entry_citation']
+            entry_citation=cached_data['entry_citation'],
+            input_tokens=cached_data.get('input_tokens', 0),
+            output_tokens=cached_data.get('output_tokens', 0),
+            cached=True
         )
 
     def _fetch_url_content(self, url):
@@ -131,6 +157,9 @@ class CRAAPAnalyzer:
     
     def analyze(self, entry) -> CRAAPScore:
         """Analyze a single bibliography entry using the CRAAP test"""
+        # Clean the entry first
+        entry = self._clean_entry(entry)
+        
         # Check cache first
         entry_hash = self._compute_entry_hash(entry)
         cache_key = self._cache_key(entry_hash)
@@ -161,37 +190,37 @@ URL: {entry['url']}
 Additional content from URL: {url_content if url_content else 'Not available'}
 
 Provide your analysis in the following JSON format:
-{{
-    "currency": {{
+{
+    "currency": {
         "score": float,
         "explanation": string,
         "confidence": float
-    }},
-    "relevance": {{
+    },
+    "relevance": {
         "score": float,
         "explanation": string,
         "confidence": float
-    }},
-    "authority": {{
+    },
+    "authority": {
         "score": float,
         "explanation": string,
         "confidence": float
-    }},
-    "accuracy": {{
+    },
+    "accuracy": {
         "score": float,
         "explanation": string,
         "confidence": float
-    }},
-    "purpose": {{
+    },
+    "purpose": {
         "score": float,
         "explanation": string,
         "confidence": float
-    }}
-}}"""
+    }
+}"""
 
         # Get analysis from GPT
         response = self.client.chat.completions.create(
-            model="gpt-4o-mini-2024-07-18",
+            model="gpt-4-turbo-preview",
             response_format={"type": "json_object"},
             max_tokens=1000,
             messages=[
@@ -199,6 +228,10 @@ Provide your analysis in the following JSON format:
                 {"role": "user", "content": prompt}
             ]
         )
+        
+        # Get token usage
+        input_tokens = response.usage.prompt_tokens
+        output_tokens = response.usage.completion_tokens
         
         # Parse response
         analysis = eval(response.choices[0].message.content)
@@ -221,7 +254,10 @@ Provide your analysis in the following JSON format:
             purpose_explanation=analysis['purpose']['explanation'],
             purpose_confidence=analysis['purpose']['confidence'],
             entry_key=entry['key'],
-            entry_citation=citation
+            entry_citation=citation,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cached=False
         )
         
         # Cache the results
@@ -242,7 +278,9 @@ Provide your analysis in the following JSON format:
             'purpose_explanation': score.purpose_explanation,
             'purpose_confidence': score.purpose_confidence,
             'entry_key': score.entry_key,
-            'entry_citation': score.entry_citation
+            'entry_citation': score.entry_citation,
+            'input_tokens': input_tokens,
+            'output_tokens': output_tokens
         }
         self._save_cache()
         
