@@ -190,37 +190,38 @@ URL: {entry['url']}
 Additional content from URL: {url_content if url_content else 'Not available'}
 
 Provide your analysis in the following JSON format:
-{
-    "currency": {
-        "score": float,
-        "explanation": string,
-        "confidence": float
-    },
-    "relevance": {
-        "score": float,
-        "explanation": string,
-        "confidence": float
-    },
-    "authority": {
-        "score": float,
-        "explanation": string,
-        "confidence": float
-    },
-    "accuracy": {
-        "score": float,
-        "explanation": string,
-        "confidence": float
-    },
-    "purpose": {
-        "score": float,
-        "explanation": string,
-        "confidence": float
-    }
-}"""
+{{
+    "currency": {{
+        "score": 0.0,
+        "explanation": "explanation here",
+        "confidence": 0.0
+    }},
+    "relevance": {{
+        "score": 0.0,
+        "explanation": "explanation here",
+        "confidence": 0.0
+    }},
+    "authority": {{
+        "score": 0.0,
+        "explanation": "explanation here",
+        "confidence": 0.0
+    }},
+    "accuracy": {{
+        "score": 0.0,
+        "explanation": "explanation here",
+        "confidence": 0.0
+    }},
+    "purpose": {{
+        "score": 0.0,
+        "explanation": "explanation here",
+        "confidence": 0.0
+    }}
+}}"""
 
         # Get analysis from GPT
         response = self.client.chat.completions.create(
-            model="gpt-4-turbo-preview",
+            # DONT CHANGE 
+            model="gpt-4o-mini",  # Using standard GPT-4 as fallback
             response_format={"type": "json_object"},
             max_tokens=1000,
             messages=[
