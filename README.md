@@ -2,6 +2,8 @@
 
 CRAAPER is a Python-based tool that automates the [CRAAP test](https://library.csuchico.edu/help/source-or-information-good) analysis for academic sources using AI. It helps researchers and students evaluate the quality and reliability of their sources by analyzing Currency, Relevance, Authority, Accuracy, and Purpose.
 
+> Analysing about 50 sources costed me using GPT-4o-mini about 0.04 Euro
+
 ## Features
 
 - **Automated CRAAP Analysis**: Uses GPT-4 to analyze academic sources based on the CRAAP criteria
@@ -18,9 +20,9 @@ CRAAPER is a Python-based tool that automates the [CRAAP test](https://library.c
   - 35-39: Average
   - 30-34: Borderline
   - <30: Unreliable, not suitable for use
-- **Rich Output Format**:
-  - Summary table with all scores
-  - Detailed explanations for each source
+- **Flexible Output Formats**:
+  - Interactive text output with formatted tables
+  - CSV export for data analysis in spreadsheet software
   - Confidence indicators for less certain assessments
 
 ## Installation
@@ -28,7 +30,7 @@ CRAAPER is a Python-based tool that automates the [CRAAP test](https://library.c
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/craaper.git
+git clone https://github.com/jeroensmink98/craaper.git
 cd craaper
 ```
 
@@ -54,17 +56,40 @@ OPENAI_API_KEY=your_api_key_here
 
 1. Prepare your BibTeX file with your sources.
 
-2. Run the analysis:
+2. Run the analysis with one of these options:
 
 ```bash
+# For interactive text output (default)
 python src/main.py path/to/your/references.bib
+
+# For CSV output
+python src/main.py path/to/your/references.bib --output csv
 ```
 
-3. Review the output which includes:
-   - A summary table with scores for each criterion
-   - Total scores and categories
-   - Detailed explanations for each assessment
-   - Confidence indicators (marked with \*) for less certain evaluations
+3. Review the output:
+
+For text output (default):
+
+- A summary table with scores for each criterion
+- Total scores and categories
+- Detailed explanations for each assessment
+- Confidence indicators (marked with \*) for less certain evaluations
+
+For CSV output:
+
+- `output/craap_analysis.csv`: Complete analysis including
+  - Scores for each criterion
+  - Confidence levels
+  - Detailed explanations
+  - Total scores and categories
+- `output/usage_stats.csv`: Technical metadata about API usage and costs
+
+The CSV output is particularly useful for:
+
+- Further analysis in spreadsheet software
+- Creating custom visualizations
+- Batch processing of results
+- Integration with other tools or workflows
 
 ## Cache Management
 
