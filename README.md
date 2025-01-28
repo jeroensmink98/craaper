@@ -66,6 +66,12 @@ python src/main.py path/to/your/references.bib
 python src/main.py path/to/your/references.bib --output csv
 ```
 
+A test file is provided in `tests/test.bib`. so you can run:
+
+```bash
+python src/main.py tests/test.bib
+```
+
 3. Review the output:
 
 For text output (default):
