@@ -17,6 +17,8 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description='Perform CRAAP analysis on bibliography entries')
     parser.add_argument('bib_file', type=str, help='Path to the BibTeX file')
+    parser.add_argument('--output', type=str, choices=['text', 'csv'], default='text',
+                      help='Output format: text (default) or csv')
     args = parser.parse_args()
     
     # Parse BibTeX file
@@ -32,7 +34,7 @@ def main():
         results.append(analysis)
     
     # Format and display results
-    formatted_output = format_results(results)
+    formatted_output = format_results(results, output_format=args.output)
     print(formatted_output)
 
 if __name__ == "__main__":
